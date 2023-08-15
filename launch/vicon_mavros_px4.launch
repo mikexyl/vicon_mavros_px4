@@ -1,0 +1,42 @@
+<launch>
+        <arg name="fcu_url" default="/dev/ttyUSB0:115200" />
+        <arg name="gcs_url" default="udp://:14551@192.168.1.29:14550" />
+        <arg name="tgt_system" default="1" />
+        <arg name="tgt_component" default="1" />
+        <arg name="log_output" default="screen" />
+        <arg name="fcu_protocol" default="v2.0" />
+        <arg name="respawn_mavros" default="false" />
+
+        <include file="$(find mavros)/launch/node.launch">
+                <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
+                <arg name="config_yaml" value="/home/iconlab/Workspaces/px4_ws/src/vicon_mavros_px4/launch/px4_config.yaml" />
+
+                <arg name="fcu_url" value="$(arg fcu_url)" />
+                <arg name="gcs_url" value="$(arg gcs_url)" />
+                <arg name="tgt_system" value="$(arg tgt_system)" />
+                <arg name="tgt_component" value="$(arg tgt_component)" />
+                <arg name="log_output" value="$(arg log_output)" />
+                <arg name="fcu_protocol" value="$(arg fcu_protocol)" />
+                <arg name="respawn_mavros" default="$(arg respawn_mavros)" />
+        </include>
+
+  <!-- IP and port on Vicon Windows PC -->
+  <arg name="datastream_hostport" default="192.168.1.2:801"/>
+  <!-- Fixed vicon world frame -->
+  <arg name="vicon_world_frame" default="/vicon_world"/>
+
+
+	<node pkg="vicon_bridge" type="vicon_bridge" name="vicon" output="screen" >
+		<param name="stream_mode" value="ServerPush"/>
+    <param name="datastream_hostport" value="$(arg datastream_hostport)"/>
+		<param name="tf_ref_frame_id" value="$(arg vicon_world_frame)"/>
+	</node>
+
+	<node pkg="vicon_bridge" type="tf_to_pose" name="tf_to_pose" output="screen" >
+	<remap from="vicon_tf" to="/vicon/icon_s500_1/icon_s500_1"/>
+	<remap from="mavros_pose" to="/mavros/vision_pose/pose_100hz"/>
+</node>
+
+    <node pkg="topic_tools" type="throttle" name="throttle" args="messages /mavros/vision_pose/pose_100hz 30.0 /mavros/vision_pose/pose" />
+
+</launch>
